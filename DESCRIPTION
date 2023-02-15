@@ -1,0 +1,16 @@
+Package: mixnet
+Type: Package
+Title: Modeling group differences and moderation effects in statistical network models
+Version: 0.1.0
+Authors@R: c(
+  person("Jonas", "Haslbeck", email = "jonashaslbeck@protonmail.com",role = c("aut", "cre")))
+Maintainer: Jonas Haslbeck <jonashaslbeck@protonmail.com>
+Description: A toolbox for modeling manifest and latent group differences and moderation effects in various statistical network models.
+Encoding: UTF-8
+LazyData: true
+License: GPL-2
+Imports: mlVAR
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

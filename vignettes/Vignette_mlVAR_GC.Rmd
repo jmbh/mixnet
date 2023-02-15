@@ -1,0 +1,21 @@
+---
+title: "Vignette for Testing Group Differences across mlVAR Models"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Vignette_mlVAR_GC}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+# library(mixnet)
+
+rnorm(100)
+```
