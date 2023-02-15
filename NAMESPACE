@@ -4,3 +4,4 @@ exportPattern("^[[:alpha:]]+")
 # Suggested by RMD Check
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 
+importFrom("mlVAR", "mlVAR")

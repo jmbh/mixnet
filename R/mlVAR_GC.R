@@ -1,6 +1,5 @@
 # jonashaslbeck@protonmail; Feb 15, 2023
 
-
 # ------------------------------------------------------------
 # -------- Function to Process mlVAR Outputs -----------------
 # ------------------------------------------------------------
@@ -74,12 +73,15 @@ Process_mlVAR <- function(object1,
 # saveModels = TRUE
 # verbose = TRUE
 
+
 mlVAR_GC <- function(data1, # dataset of group 1
                      data2, # dataset of group 1
                      vars, # variables to be included in mlVAR (same in both data sets)
                      idvar, # variable indicating the nesting/subject id (same in both data sets)
+                     dayvar = NULL,
+                     beepvar = NULL,
                      nB = 500, # number of samples in permutation test
-                     saveModels = TRUE, # if TRUE, all models are saved
+                     saveModels = FALSE, # if TRUE, all models are saved; defaults to FALSE to save memory
                      verbose = TRUE, # if TRUE, progress bar is mapped on permutations
                      ... # arguments passed down to mlVAR()
 ) {
@@ -93,6 +95,8 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
   # TODO:
   # All the usual input checks ...
+
+  # ------ Collect passed down arguments -----
 
 
   # ------ Get Basic Info -----
@@ -112,12 +116,30 @@ mlVAR_GC <- function(data1, # dataset of group 1
   v_Ns <- unlist(N_ids)
   totalN <- sum(v_Ns)
 
+  # ------ Storage for Sampling Distribution -----
+
+  # Collect sampling distributions (for now) for:
+  # a) between-person partial correlations
+  # b.1) VAR/phi fixed effects
+  # b.2) VAR/phi random effects sds
+  # c.1) Contemp./Gamma fixed effects
+  # c.2) Contemp./Gamma random effects sds
+  # - I guess mean estimates make no sense, since we centered within-person
+  # TODO: Later: Also output sampling distributions for correlations between REs, if specified
+
+  # Create Storage
+  a_between <- array(NA, dim=c(p, p, nB))
+  a_phi_fixed <- array(NA, dim=c(p, p, nB))
+  a_phi_RE_sd <- array(NA, dim=c(p, p, nB))
+  a_gam_fixed <- array(NA, dim=c(p, p, nB))
+  a_gam_RE_sd <- array(NA, dim=c(p, p, nB))
+
 
   # ------ Loop Over Permutations -----
 
   # Storage
-  l_out <- list(vector("list", length = nB),
-                vector("list", length = nB))
+  if(saveModels) l_out <- list(vector("list", length = nB),
+                               vector("list", length = nB))
 
   # Progress bar
   if(verbose == TRUE) pb <- txtProgressBar(min = 0, max=nB, initial = 0, char="-", style = 3)
@@ -137,45 +159,35 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
     # --- Fit mlVAR models ---
 
+    l_pair_b <- list()
+
     for(j in 1:2) {
 
-      l_out[[j]][[b]] <- mlVAR(data = l_data_h0[[j]],
+      # TODO: make this variable specification of dayvar/beepvar less hacky
+      if(is.null(dayvar)) {
+        l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
                                vars = vars,
                                idvar = idvar,
                                verbose = FALSE,
                                lags = 1) # TODO: later allow also higher order lags (see also below)
+      } else {
+        l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
+                               vars = vars,
+                               idvar = idvar,
+                               dayvar = dayvar,
+                               beepvar = beepvar,
+                               verbose = FALSE,
+                               lags = 1) # TODO: later allow also higher order lags (see also below)
+      } # end if: dayvar specified
+
+      if(saveModels) l_out[[j]][[b]] <- l_pair_b[[j]]
+
 
     } # end loop: J=2 groups
 
-    # Update progress bar
-    if(verbose==TRUE) setTxtProgressBar(pb, b)
-
-  } # end loop: nB permutations
-
-
-  # ------ Collect Sampling Distribution -----
-
-  # Collect sampling distributions (for now) for:
-  # a) between-person partial correlations
-  # b.1) VAR/phi fixed effects
-  # b.2) VAR/phi random effects sds
-  # c.1) Contemp./Gamma fixed effects
-  # c.2) Contemp./Gamma random effects sds
-  # - I guess mean estimates make no sense, since we centered within-person
-  # TODO: Later: Also output sampling distributions for correlations between REs, if specified
-
-  # Create Storage
-  a_between <- array(NA, dim=c(p, p, nB))
-  a_phi_fixed <- array(NA, dim=c(p, p, nB))
-  a_phi_RE_sd <- array(NA, dim=c(p, p, nB))
-  a_gam_fixed <- array(NA, dim=c(p, p, nB))
-  a_gam_RE_sd <- array(NA, dim=c(p, p, nB))
-
-  for(b in 1:nB) {
-
     # All differences are: Group 1 - Group 2
-    diffs_b <- Process_mlVAR(object1 = l_out[[1]][[b]],
-                             object2 = l_out[[2]][[b]])
+    diffs_b <- Process_mlVAR(object1 = l_pair_b[[1]],
+                             object2 = l_pair_b[[2]])
 
     # Fill into arrays
     a_between[, , b] <- diffs_b$diff_between
@@ -184,29 +196,43 @@ mlVAR_GC <- function(data1, # dataset of group 1
     a_gam_fixed[, , b] <- diffs_b$diff_gam_fix
     a_gam_RE_sd[, , b] <- diffs_b$diff_gam_RE_sd
 
-  } # for: permutations
+    # Update progress bar
+    if(verbose == TRUE) setTxtProgressBar(pb, b)
+
+  } # end loop: nB permutations
+
 
 
   # ------ Create Test Statistics -----
-  # Group 1
-  out_emp_1 <- mlVAR(data = data1,
-                     vars = vars,
-                     idvar = idvar,
-                     verbose = FALSE,
-                     lags = 1)
-  # Group 2
-  out_emp_2 <- mlVAR(data = data2,
-                     vars = vars,
-                     idvar = idvar,
-                     verbose = FALSE,
-                     lags = 1)
+
+  l_out_emp <- list()
+
+  for(j in 1:2) {
+
+    # TODO: make this variable specification of dayvar/beepvar less hacky
+    if(is.null(dayvar)) {
+      l_out_emp[[j]] <-  mlVAR(data = data1,
+                               vars = vars,
+                               idvar = idvar,
+                               dayvar = dayvar,
+                               beepvar = beepvar,
+                               verbose = FALSE,
+                               lags = 1)
+    } else {
+      l_out_emp[[j]] <-  mlVAR(data = data1,
+                               vars = vars,
+                               beepvar = beepvar,
+                               verbose = FALSE,
+                               lags = 1)
+    } # end if: dayvar specified
+
+  } # Loop: 2 groups
 
 
   # --- Matrices with True differences ---
 
-  diffs_true <- Process_mlVAR(object1 = out_emp_1,
-                              object2 = out_emp_2)
-
+  diffs_true <- Process_mlVAR(object1 = l_out_emp[[1]],
+                              object2 = l_out_emp[[2]])
 
 
   # ------ Compute p-values -----
