@@ -214,13 +214,12 @@ mlVAR_GC <- function(data1, # dataset of group 1
       l_out_emp[[j]] <-  mlVAR(data = data1,
                                vars = vars,
                                idvar = idvar,
-                               dayvar = dayvar,
-                               beepvar = beepvar,
                                verbose = FALSE,
                                lags = 1)
     } else {
       l_out_emp[[j]] <-  mlVAR(data = data1,
                                vars = vars,
+                               dayvar = dayvar,
                                beepvar = beepvar,
                                verbose = FALSE,
                                lags = 1)
