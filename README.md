@@ -4,5 +4,5 @@ This early developmental version can be installed from within R using the `devto
 
 ```r
 library(devtools)
-install_github("jmbh/mgm")
+install_github("jmbh/mixnet")
 ```
