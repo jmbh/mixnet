@@ -83,7 +83,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
                      estimator,
                      contemporaneous,
                      temporal,
-                     Ncores,
+                     nCores,
                      nP = 500, # number of samples in permutation test
                      saveModels = FALSE, # if TRUE, all models are saved; defaults to FALSE to save memory
                      verbose = TRUE # if TRUE, progress bar is mapped on permutations
@@ -180,7 +180,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
                                estimator = estimator,
                                contemporaneous = contemporaneous,
                                temporal = temporal,
-                               nCores = nCores,
+                               nCores = nCoresnCores,
                                verbose = FALSE,
                                lags = 1) # TODO: later allow also higher order lags (see also below)
       } else {
