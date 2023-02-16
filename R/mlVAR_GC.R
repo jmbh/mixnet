@@ -170,8 +170,6 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
     for(j in 1:2) {
 
-      browser()
-
       # TODO: make this variable specification of dayvar/beepvar less hacky
       if(is.null(dayvar)) {
         l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
