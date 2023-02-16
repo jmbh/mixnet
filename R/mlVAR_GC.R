@@ -178,7 +178,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
                                estimator = estimator,
                                contemporaneous = contemporaneous,
                                temporal = temporal,
-                               nCores = nCoresnCores,
+                               nCores = nCores,
                                verbose = FALSE,
                                lags = 1) # TODO: later allow also higher order lags (see also below)
       } else {
