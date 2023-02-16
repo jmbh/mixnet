@@ -69,7 +69,7 @@ Process_mlVAR <- function(object1,
 
 # vars <- c("V1", "V2", "V3")
 # idvar <- "id"
-# nB <- 5
+# nP <- 5
 # saveModels = TRUE
 # verbose = TRUE
 
@@ -80,10 +80,13 @@ mlVAR_GC <- function(data1, # dataset of group 1
                      idvar, # variable indicating the nesting/subject id (same in both data sets)
                      dayvar = NULL,
                      beepvar = NULL,
-                     nB = 500, # number of samples in permutation test
+                     estimator,
+                     contemporaneous,
+                     temporal,
+                     Ncores,
+                     nP = 500, # number of samples in permutation test
                      saveModels = FALSE, # if TRUE, all models are saved; defaults to FALSE to save memory
-                     verbose = TRUE, # if TRUE, progress bar is mapped on permutations
-                     ... # arguments passed down to mlVAR()
+                     verbose = TRUE # if TRUE, progress bar is mapped on permutations
 ) {
 
 
@@ -97,6 +100,10 @@ mlVAR_GC <- function(data1, # dataset of group 1
   # All the usual input checks ...
 
   # ------ Collect passed down arguments -----
+  if(missing(estimator)) estimator <- "default"
+  if(missing(contemporaneous)) contemporaneous <- "orthogonal"
+  if(missing(temporal)) temporal <- "orthogonal"
+  if(missing(nCores)) nCores <- 1
 
 
   # ------ Get Basic Info -----
@@ -128,23 +135,23 @@ mlVAR_GC <- function(data1, # dataset of group 1
   # TODO: Later: Also output sampling distributions for correlations between REs, if specified
 
   # Create Storage
-  a_between <- array(NA, dim=c(p, p, nB))
-  a_phi_fixed <- array(NA, dim=c(p, p, nB))
-  a_phi_RE_sd <- array(NA, dim=c(p, p, nB))
-  a_gam_fixed <- array(NA, dim=c(p, p, nB))
-  a_gam_RE_sd <- array(NA, dim=c(p, p, nB))
+  a_between <- array(NA, dim=c(p, p, nP))
+  a_phi_fixed <- array(NA, dim=c(p, p, nP))
+  a_phi_RE_sd <- array(NA, dim=c(p, p, nP))
+  a_gam_fixed <- array(NA, dim=c(p, p, nP))
+  a_gam_RE_sd <- array(NA, dim=c(p, p, nP))
 
 
   # ------ Loop Over Permutations -----
 
   # Storage
-  if(saveModels) l_out <- list(vector("list", length = nB),
-                               vector("list", length = nB))
+  if(saveModels) l_out <- list(vector("list", length = nP),
+                               vector("list", length = nP))
 
   # Progress bar
-  if(verbose == TRUE) pb <- txtProgressBar(min = 0, max=nB, initial = 0, char="-", style = 3)
+  if(verbose == TRUE) pb <- txtProgressBar(min = 0, max=nP, initial = 0, char="-", style = 3)
 
-  for(b in 1:nB) {
+  for(b in 1:nP) {
 
     # --- Make permutation ---
     # This is done in a way that keeps the size in each group exactly the same as in the real groups
@@ -163,17 +170,27 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
     for(j in 1:2) {
 
+      browser()
+
       # TODO: make this variable specification of dayvar/beepvar less hacky
       if(is.null(dayvar)) {
         l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
                                vars = vars,
                                idvar = idvar,
+                               estimator = estimator,
+                               contemporaneous = contemporaneous,
+                               temporal = temporal,
+                               nCores = nCores,
                                verbose = FALSE,
                                lags = 1) # TODO: later allow also higher order lags (see also below)
       } else {
         l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
                                vars = vars,
                                idvar = idvar,
+                               estimator = estimator,
+                               contemporaneous = contemporaneous,
+                               temporal = temporal,
+                               nCores = nCores,
                                dayvar = dayvar,
                                beepvar = beepvar,
                                verbose = FALSE,
@@ -199,7 +216,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
     # Update progress bar
     if(verbose == TRUE) setTxtProgressBar(pb, b)
 
-  } # end loop: nB permutations
+  } # end loop: nP permutations
 
 
 
@@ -214,11 +231,20 @@ mlVAR_GC <- function(data1, # dataset of group 1
       l_out_emp[[j]] <-  mlVAR(data = data1,
                                vars = vars,
                                idvar = idvar,
+                               estimator = estimator,
+                               contemporaneous = contemporaneous,
+                               temporal = temporal,
+                               nCores = nCores,
                                verbose = FALSE,
                                lags = 1)
     } else {
       l_out_emp[[j]] <-  mlVAR(data = data1,
                                vars = vars,
+                               idvar = idvar,
+                               estimator = estimator,
+                               contemporaneous = contemporaneous,
+                               temporal = temporal,
+                               nCores = nCores,
                                dayvar = dayvar,
                                beepvar = beepvar,
                                verbose = FALSE,
