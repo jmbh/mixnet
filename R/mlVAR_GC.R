@@ -116,11 +116,14 @@ mlVAR_GC <- function(data1, # dataset of group 1
   m_data_cmb <- rbind(data1, data2)
 
   # Get IDs
-  l_ids <- lapply(l_data, function(x) unique(x$id))
-  v_ids <- unlist(l_ids)
+  ids1 <- sapply(data1[, idvar], as.character)
+  ids2 <- sapply(data2[, idvar], as.character)
+  v_ids <- c(ids1, ids2)
+  v_u_ids <- unique(v_ids)
+  u_ids1 <- unique(ids1)
+  u_ids2 <- unique(ids2)
   # Get Number of subjects
-  N_ids <- lapply(l_ids, length)
-  v_Ns <- unlist(N_ids)
+  v_Ns <- c(length(u_ids1), length(u_ids2))
   totalN <- sum(v_Ns)
 
   # ------ Storage for Sampling Distribution -----
@@ -155,13 +158,13 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
     # --- Make permutation ---
     # This is done in a way that keeps the size in each group exactly the same as in the real groups
-    v_ids_rnd <- v_ids[sample(1:totalN, size=totalN, replace=FALSE)]
+    v_ids_rnd <- v_u_ids[sample(1:totalN, size=totalN, replace=FALSE)]
     v_ids_1 <- v_ids_rnd[1:v_Ns[1]]
     v_ids_2 <- v_ids_rnd[(v_Ns[1]+1):totalN]
 
     # Split data based on permutations
-    data_h0_1 <- m_data_cmb[m_data_cmb$id %in% v_ids_1, ]
-    data_h0_2 <- m_data_cmb[m_data_cmb$id %in% v_ids_2, ]
+    data_h0_1 <- m_data_cmb[v_ids %in% v_ids_1, ]
+    data_h0_2 <- m_data_cmb[v_ids %in% v_ids_2, ]
     l_data_h0 <- list(data_h0_1, data_h0_2)
 
     # --- Fit mlVAR models ---
@@ -169,6 +172,8 @@ mlVAR_GC <- function(data1, # dataset of group 1
     l_pair_b <- list()
 
     for(j in 1:2) {
+
+      # browser()
 
       # TODO: make this variable specification of dayvar/beepvar less hacky
       if(is.null(dayvar)) {
