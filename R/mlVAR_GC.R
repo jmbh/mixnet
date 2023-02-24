@@ -83,7 +83,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
                      estimator,
                      contemporaneous,
                      temporal,
-                     nCores,
+                     nCores = 1,
                      nP = 500, # number of samples in permutation test
                      saveModels = FALSE, # if TRUE, all models are saved; defaults to FALSE to save memory
                      verbose = TRUE # if TRUE, progress bar is mapped on permutations
@@ -126,7 +126,103 @@ mlVAR_GC <- function(data1, # dataset of group 1
   v_Ns <- c(length(u_ids1), length(u_ids2))
   totalN <- sum(v_Ns)
 
-  # ------ Storage for Sampling Distribution -----
+
+  # ------ Loop Over Permutations -----
+
+  # Storage
+  if(saveModels) l_out_mods <- list(vector("list", length = nP),
+                                    vector("list", length = nP))
+
+  # Setup cores, if multi-core
+  if(nCores > 1) {
+    cl <- makeCluster(nCores, outfile = "")
+    registerDoParallel(cl)
+  }
+
+  # Progress bar
+  # if(nCores==1)
+  # if(verbose == TRUE) pb <- txtProgressBar(min = 0, max = nP + 1, initial = 0, char = "-", style = 3) # plus 1, because we also estimate on the true group split below
+
+  out_P <- foreach(b = 1:nP,
+                   .packages = c("mlVAR", "mixnet"),
+                   .export = c("m_data_cmb", "vars", "idvar", "estimator",
+                               "contemporaneous", "temporal"),
+                   .verbose = TRUE) %dopar% {
+
+                     # --- Make permutation ---
+                     # This is done in a way that keeps the size in each group exactly the same as in the real groups
+                     v_ids_rnd <- v_u_ids[sample(1:totalN, size=totalN, replace=FALSE)]
+                     v_ids_1 <- v_ids_rnd[1:v_Ns[1]]
+                     v_ids_2 <- v_ids_rnd[(v_Ns[1]+1):totalN]
+
+                     # Split data based on permutations
+                     data_h0_1 <- m_data_cmb[v_ids %in% v_ids_1, ]
+                     data_h0_2 <- m_data_cmb[v_ids %in% v_ids_2, ]
+                     l_data_h0 <- list(data_h0_1, data_h0_2)
+
+                     # --- Fit mlVAR models ---
+
+                     # Output list
+                     l_pair_b <- list()
+                     l_models <- list()
+
+                     for(j in 1:2) {
+
+                       # browser()
+
+                       # TODO: make this variable specification of dayvar/beepvar less hacky
+                       if(is.null(dayvar)) {
+                         l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
+                                                vars = vars,
+                                                idvar = idvar,
+                                                estimator = estimator,
+                                                contemporaneous = contemporaneous,
+                                                temporal = temporal,
+                                                nCores = 1, # we use parallelization across resamples (not nodes in nodewise estimation here)
+                                                verbose = FALSE,
+                                                lags = 1) # TODO: later allow also higher order lags (see also below)
+                       } else {
+                         l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
+                                                vars = vars,
+                                                idvar = idvar,
+                                                estimator = estimator,
+                                                contemporaneous = contemporaneous,
+                                                temporal = temporal,
+                                                nCores = 1,
+                                                dayvar = dayvar,
+                                                beepvar = beepvar,
+                                                verbose = FALSE,
+                                                lags = 1) # TODO: later allow also higher order lags (see also below)
+                       } # end if: dayvar specified
+
+                       if(saveModels) l_models[[j]] <- l_pair_b[[j]]
+
+
+                     } # end loop: J=2 groups
+
+                     # All differences are: Group 1 - Group 2
+                     diffs_b <- Process_mlVAR(object1 = l_pair_b[[1]],
+                                              object2 = l_pair_b[[2]])
+
+                     outlist_b <- list("diff_between" = diffs_b$diff_between,
+                                       "diff_phi_fix" = diffs_b$diff_phi_fix,
+                                       "diff_phi_RE_sd" = diffs_b$diff_phi_RE_sd,
+                                       "diff_gam_fix" = diffs_b$diff_gam_fix,
+                                       "diff_gam_RE_sd" = diffs_b$diff_between,
+                                       "Models"=l_models)
+
+                     return(outlist_b)
+
+                     # Update progress bar
+                     # if(nCores==1)
+                     # if(verbose == TRUE) setTxtProgressBar(pb, b) # no idea what this will do in parallel processing
+
+                   } # end foreach: over permutations
+
+  # Close down cores, if multi-core
+  if(nCores>1) stopCluster(cl)
+
+  # ------ Loop results into objects for Sampling Distribution -----
 
   # Collect sampling distributions (for now) for:
   # a) between-person partial correlations
@@ -136,7 +232,6 @@ mlVAR_GC <- function(data1, # dataset of group 1
   # c.2) Contemp./Gamma random effects sds
   # - I guess mean estimates make no sense, since we centered within-person
   # TODO: Later: Also output sampling distributions for correlations between REs, if specified
-
   # Create Storage
   a_between <- array(NA, dim=c(p, p, nP))
   a_phi_fixed <- array(NA, dim=c(p, p, nP))
@@ -144,83 +239,22 @@ mlVAR_GC <- function(data1, # dataset of group 1
   a_gam_fixed <- array(NA, dim=c(p, p, nP))
   a_gam_RE_sd <- array(NA, dim=c(p, p, nP))
 
-
-  # ------ Loop Over Permutations -----
-
-  # Storage
-  if(saveModels) l_out <- list(vector("list", length = nP),
-                               vector("list", length = nP))
-
-  # Progress bar
-  if(verbose == TRUE) pb <- txtProgressBar(min = 0, max=nP, initial = 0, char="-", style = 3)
+  # browser()
 
   for(b in 1:nP) {
 
-    # --- Make permutation ---
-    # This is done in a way that keeps the size in each group exactly the same as in the real groups
-    v_ids_rnd <- v_u_ids[sample(1:totalN, size=totalN, replace=FALSE)]
-    v_ids_1 <- v_ids_rnd[1:v_Ns[1]]
-    v_ids_2 <- v_ids_rnd[(v_Ns[1]+1):totalN]
-
-    # Split data based on permutations
-    data_h0_1 <- m_data_cmb[v_ids %in% v_ids_1, ]
-    data_h0_2 <- m_data_cmb[v_ids %in% v_ids_2, ]
-    l_data_h0 <- list(data_h0_1, data_h0_2)
-
-    # --- Fit mlVAR models ---
-
-    l_pair_b <- list()
-
-    for(j in 1:2) {
-
-      # browser()
-
-      # TODO: make this variable specification of dayvar/beepvar less hacky
-      if(is.null(dayvar)) {
-        l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
-                               vars = vars,
-                               idvar = idvar,
-                               estimator = estimator,
-                               contemporaneous = contemporaneous,
-                               temporal = temporal,
-                               nCores = nCores,
-                               verbose = FALSE,
-                               lags = 1) # TODO: later allow also higher order lags (see also below)
-      } else {
-        l_pair_b[[j]] <- mlVAR(data = l_data_h0[[j]],
-                               vars = vars,
-                               idvar = idvar,
-                               estimator = estimator,
-                               contemporaneous = contemporaneous,
-                               temporal = temporal,
-                               nCores = nCores,
-                               dayvar = dayvar,
-                               beepvar = beepvar,
-                               verbose = FALSE,
-                               lags = 1) # TODO: later allow also higher order lags (see also below)
-      } # end if: dayvar specified
-
-      if(saveModels) l_out[[j]][[b]] <- l_pair_b[[j]]
-
-
-    } # end loop: J=2 groups
-
-    # All differences are: Group 1 - Group 2
-    diffs_b <- Process_mlVAR(object1 = l_pair_b[[1]],
-                             object2 = l_pair_b[[2]])
+    # browser()
 
     # Fill into arrays
-    a_between[, , b] <- diffs_b$diff_between
-    a_phi_fixed[, , b] <- diffs_b$diff_phi_fix[, , 1] # TODO: adapt also to higher order lags
-    a_phi_RE_sd[, , b] <- diffs_b$diff_phi_RE_sd[, , 1] # TODO: adapt also to higher order lags
-    a_gam_fixed[, , b] <- diffs_b$diff_gam_fix
-    a_gam_RE_sd[, , b] <- diffs_b$diff_gam_RE_sd
+    a_between[, , b] <- out_P[[b]]$diff_between
+    a_phi_fixed[, , b] <- out_P[[b]]$diff_phi_fix[, , 1] # TODO: adapt also to higher order lags
+    a_phi_RE_sd[, , b] <- out_P[[b]]$diff_phi_RE_sd[, , 1] # TODO: adapt also to higher order lags
+    a_gam_fixed[, , b] <- out_P[[b]]$diff_gam_fix
+    a_gam_RE_sd[, , b] <- out_P[[b]]$diff_gam_RE_sd
 
-    # Update progress bar
-    if(verbose == TRUE) setTxtProgressBar(pb, b)
+    if(saveModels) l_out_mods[[b]] <- diffs_b$Models
 
-  } # end loop: nP permutations
-
+  } # end for: loop in permutations
 
 
   # ------ Create Test Statistics -----
@@ -231,28 +265,31 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
     # TODO: make this variable specification of dayvar/beepvar less hacky
     if(is.null(dayvar)) {
-      l_out_emp[[j]] <-  mlVAR(data = data1,
+      l_out_emp[[j]] <-  mlVAR(data = l_data[[j]],
                                vars = vars,
                                idvar = idvar,
                                estimator = estimator,
                                contemporaneous = contemporaneous,
                                temporal = temporal,
-                               nCores = nCores,
+                               nCores = 1,
                                verbose = FALSE,
                                lags = 1)
     } else {
-      l_out_emp[[j]] <-  mlVAR(data = data1,
+      l_out_emp[[j]] <-  mlVAR(data = l_data[[j]],
                                vars = vars,
                                idvar = idvar,
                                estimator = estimator,
                                contemporaneous = contemporaneous,
                                temporal = temporal,
-                               nCores = nCores,
+                               nCores = 1,
                                dayvar = dayvar,
                                beepvar = beepvar,
                                verbose = FALSE,
                                lags = 1)
     } # end if: dayvar specified
+
+    # if(nCores==1)
+    # if(verbose == TRUE) setTxtProgressBar(pb, b+1)
 
   } # Loop: 2 groups
 
@@ -272,10 +309,6 @@ mlVAR_GC <- function(data1, # dataset of group 1
   # b.1) VAR: fixed effects
   m_pval_phi_fix <- matrix(NA, p, p)
   for(i in 1:p) for(j in 1:p) m_pval_phi_fix[i,j] <- mean(abs(a_phi_fixed[i,j,])>abs(diffs_true$diff_phi_fix[i,j,]))
-  # DEVV:
-  # a_phi_fixed[1,3,]
-  # hist(a_phi_fixed[1,3,], xlim = c(-.5, .5))
-  # abline(v = diffs_true$diff_phi_fix[1,3,], col="red")
 
   # b.2) VAR: RE sds
   m_pval_phi_RE_sd <- matrix(NA, p, p)
