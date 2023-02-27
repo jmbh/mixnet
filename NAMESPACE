@@ -5,3 +5,7 @@ exportPattern("^[[:alpha:]]+")
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
 
 importFrom("mlVAR", "mlVAR")
+
+import("foreach")
+import("parallel")
+import("doParallel")

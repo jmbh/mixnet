@@ -45,7 +45,7 @@ output <- mlVAR_GC(data1 = data1,
                    data2 = data2, 
                    vars = c("V1", "V2", "V3"), 
                    idvar = "id", 
-                   nB = 50, # Should be more in practice, here less for illustration
+                   nP = 5, # Should be much more in practice, here less for illustration
                    verbose = FALSE)
 proc.time()[3] - timer
 ```
