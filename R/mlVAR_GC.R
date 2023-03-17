@@ -139,15 +139,24 @@ mlVAR_GC <- function(data1, # dataset of group 1
     registerDoParallel(cl)
   }
 
+  # head(m_data_cmb)
+  # class(m_data_cmb)
+
+
   # Progress bar
   # if(nCores==1)
   # if(verbose == TRUE) pb <- txtProgressBar(min = 0, max = nP + 1, initial = 0, char = "-", style = 3) # plus 1, because we also estimate on the true group split below
+#
+  # browser()
 
   out_P <- foreach(b = 1:nP,
                    .packages = c("mlVAR", "mixnet"),
                    .export = c("m_data_cmb", "vars", "idvar", "estimator",
-                               "contemporaneous", "temporal"),
-                   .verbose = TRUE) %dopar% {
+                               "contemporaneous", "temporal", "totalN", "v_Ns",
+                               "v_ids"),
+                   .verbose = verbose) %dopar% {
+
+                     # browser()
 
                      # --- Make permutation ---
                      # This is done in a way that keeps the size in each group exactly the same as in the real groups
@@ -209,7 +218,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
                                        "diff_phi_RE_sd" = diffs_b$diff_phi_RE_sd,
                                        "diff_gam_fix" = diffs_b$diff_gam_fix,
                                        "diff_gam_RE_sd" = diffs_b$diff_between,
-                                       "Models"=l_models)
+                                       "Models" = l_models)
 
                      return(outlist_b)
 
@@ -252,7 +261,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
     a_gam_fixed[, , b] <- out_P[[b]]$diff_gam_fix
     a_gam_RE_sd[, , b] <- out_P[[b]]$diff_gam_RE_sd
 
-    if(saveModels) l_out_mods[[b]] <- diffs_b$Models
+    if(saveModels) l_out_mods[[b]] <- out_P[[b]]$Models
 
   } # end for: loop in permutations
 
@@ -325,7 +334,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
   # ------ Create Output List -----
 
-  if(saveModels) l_out_ret <- l_out else l_out_ret <- NULL
+  if(saveModels) l_out_ret <- l_out_mods else l_out_ret <- NULL
 
   outlist <- list("TrueDiffs" = list("Between" = diffs_true$diff_between,
                                      "Phi_mean" = diffs_true$diff_phi_fix,
