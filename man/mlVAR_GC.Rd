@@ -10,7 +10,7 @@ Does inference on group differences in mlVAR models using a permutation test. Th
 \usage{
 mlVAR_GC(data1, data2, vars, idvar, dayvar = NULL,
          beepvar = NULL, estimator, contemporaneous,
-         temporal, Ncores, nP = 500, saveModels = FALSE,
+         temporal, nCores, nP = 500, saveModels = FALSE,
          verbose = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -40,7 +40,7 @@ How should the contemporaneous networks be estimated? These networks are always 
   \item{temporal}{
 How should the temporal effects be estimated? \code{"correlated"} estimates correlated random effects, \code{"orthogonal"} estimates non-correlated random effects and \code{"fixed"} estimates a model in which only the intercept is random. Defaults to \code{"correlated"} when the number of variables is less than 6 and \code{"orthogonal"} otherwise. \code{"unique"} uses lm to estimate an unique model for each subject. See also \code{mlVAR()}.
 }
-  \item{Ncores}{
+  \item{nCores}{
 Number of cores to use in computation. See also \code{mlVAR()}.
 }
   \item{nP}{

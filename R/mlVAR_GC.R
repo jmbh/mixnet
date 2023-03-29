@@ -177,7 +177,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
                      for(j in 1:2) {
 
-                       # browser()
+                       browser()
 
                        # TODO: make this variable specification of dayvar/beepvar less hacky
                        if(is.null(dayvar)) {
