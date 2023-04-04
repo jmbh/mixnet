@@ -75,7 +75,7 @@ Process_mlVAR <- function(object1,
 
 
 mlVAR_GC <- function(data1, # dataset of group 1
-                     data2, # dataset of group 1
+                     data2, # dataset of group 2
                      vars, # variables to be included in mlVAR (same in both data sets)
                      idvar, # variable indicating the nesting/subject id (same in both data sets)
                      dayvar = NULL,
@@ -139,24 +139,12 @@ mlVAR_GC <- function(data1, # dataset of group 1
     registerDoParallel(cl)
   }
 
-  # head(m_data_cmb)
-  # class(m_data_cmb)
-
-
-  # Progress bar
-  # if(nCores==1)
-  # if(verbose == TRUE) pb <- txtProgressBar(min = 0, max = nP + 1, initial = 0, char = "-", style = 3) # plus 1, because we also estimate on the true group split below
-#
-  # browser()
-
   out_P <- foreach(b = 1:nP,
                    .packages = c("mlVAR", "mixnet"),
                    .export = c("m_data_cmb", "vars", "idvar", "estimator",
                                "contemporaneous", "temporal", "totalN", "v_Ns",
                                "v_ids"),
                    .verbose = verbose) %dopar% {
-
-                     # browser()
 
                      # --- Make permutation ---
                      # This is done in a way that keeps the size in each group exactly the same as in the real groups
@@ -176,8 +164,6 @@ mlVAR_GC <- function(data1, # dataset of group 1
                      l_models <- list()
 
                      for(j in 1:2) {
-
-                       browser()
 
                        # TODO: make this variable specification of dayvar/beepvar less hacky
                        if(is.null(dayvar)) {
@@ -248,11 +234,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
   a_gam_fixed <- array(NA, dim=c(p, p, nP))
   a_gam_RE_sd <- array(NA, dim=c(p, p, nP))
 
-  # browser()
-
   for(b in 1:nP) {
-
-    # browser()
 
     # Fill into arrays
     a_between[, , b] <- out_P[[b]]$diff_between
