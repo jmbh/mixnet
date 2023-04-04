@@ -1,11 +1,12 @@
 exportPattern("^[[:alpha:]]+")
 
-
 # Suggested by RMD Check
 importFrom("utils", "setTxtProgressBar", "txtProgressBar")
-
 importFrom("mlVAR", "mlVAR")
 
+# For parallelization
 import("foreach")
 import("parallel")
 import("doParallel")
+import("progress")
+import("doSNOW")

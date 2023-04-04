@@ -1,4 +1,4 @@
-# jonashaslbeck@protonmail; Feb 15, 2023
+# jonashaslbeck@protonmail; April 4, 2023
 
 # ------------------------------------------------------------
 # -------- Function to Process mlVAR Outputs -----------------
@@ -67,13 +67,6 @@ Process_mlVAR <- function(object1,
 # - sampling distribution for each parameter
 # - test statistic based on the mlVAR models estimated on the two datasets
 
-# vars <- c("V1", "V2", "V3")
-# idvar <- "id"
-# nP <- 5
-# saveModels = TRUE
-# verbose = TRUE
-
-
 mlVAR_GC <- function(data1, # dataset of group 1
                      data2, # dataset of group 2
                      vars, # variables to be included in mlVAR (same in both data sets)
@@ -86,7 +79,8 @@ mlVAR_GC <- function(data1, # dataset of group 1
                      nCores = 1,
                      nP = 500, # number of samples in permutation test
                      saveModels = FALSE, # if TRUE, all models are saved; defaults to FALSE to save memory
-                     verbose = TRUE # if TRUE, progress bar is mapped on permutations
+                     verbose = FALSE, # if TRUE, verbose mode is activated in foreach
+                     pbar = TRUE # if TRUE, a progress bar is being shown
 ) {
 
 
@@ -139,6 +133,9 @@ mlVAR_GC <- function(data1, # dataset of group 1
     registerDoParallel(cl)
   }
 
+  pb <- txtProgressBar(0, nP+1, style = 3)
+
+  # Call foreach:
   out_P <- foreach(b = 1:nP,
                    .packages = c("mlVAR", "mixnet"),
                    .export = c("m_data_cmb", "vars", "idvar", "estimator",
@@ -206,11 +203,10 @@ mlVAR_GC <- function(data1, # dataset of group 1
                                        "diff_gam_RE_sd" = diffs_b$diff_between,
                                        "Models" = l_models)
 
-                     return(outlist_b)
+                     # Set progress bar
+                     setTxtProgressBar(pb, b)
 
-                     # Update progress bar
-                     # if(nCores==1)
-                     # if(verbose == TRUE) setTxtProgressBar(pb, b) # no idea what this will do in parallel processing
+                     return(outlist_b)
 
                    } # end foreach: over permutations
 
@@ -279,10 +275,10 @@ mlVAR_GC <- function(data1, # dataset of group 1
                                lags = 1)
     } # end if: dayvar specified
 
-    # if(nCores==1)
-    # if(verbose == TRUE) setTxtProgressBar(pb, b+1)
-
   } # Loop: 2 groups
+
+  # Final step
+  setTxtProgressBar(pb, nP + 1)
 
 
   # --- Matrices with True differences ---

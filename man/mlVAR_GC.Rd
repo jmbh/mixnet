@@ -10,8 +10,8 @@ Does inference on group differences in mlVAR models using a permutation test. Th
 \usage{
 mlVAR_GC(data1, data2, vars, idvar, dayvar = NULL,
          beepvar = NULL, estimator, contemporaneous,
-         temporal, nCores, nP = 500, saveModels = FALSE,
-         verbose = TRUE)
+         temporal, nCores = 1, nP = 500, saveModels = FALSE,
+         verbose = FALSE, pbar = TRUE)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -50,7 +50,10 @@ Number of permutations used to create the sampling distribution under the null h
 If true, the pair of mlVAR objects for each permutations are saved in the output. Defaults to \code{saveModels = FALSE} since the resulting output object can become very large.
 }
   \item{verbose}{
-If true, a progress bar is shown. Defaults to \code{verbose=TRUE}.
+If true, the the verbose option in foreach, which is used in side \code{mlVAR_GC()}, is switched on. Defaults to \code{verbose = FALSE}.
+}
+  \item{pbar}{
+If true, a progress bar is shown. Defaults to \code{pbar = TRUE}.
 }
 }
 \details{

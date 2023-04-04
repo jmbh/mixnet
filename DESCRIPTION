@@ -9,7 +9,7 @@ Description: A toolbox for modeling manifest and latent group differences and mo
 Encoding: UTF-8
 LazyData: true
 License: GPL-2
-Imports: mlVAR, doParallel, parallel, foreach
+Imports: mlVAR, doParallel, parallel, foreach, progress, doSNOW
 Suggests: 
     knitr,
     rmarkdown
