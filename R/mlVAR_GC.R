@@ -1,4 +1,4 @@
-# jonashaslbeck@protonmail; April 4, 2023
+# jonashaslbeck@protonmail; April 5, 2023
 
 # ------------------------------------------------------------
 # -------- Function to Process mlVAR Outputs -----------------
@@ -6,7 +6,9 @@
 
 
 Process_mlVAR <- function(object1,
-                          object2) {
+                          object2,
+                          contemporaneous = "orthogonal",
+                          temporal = "orthogonal") {
 
   # a) Between network
   btw_1 <- object1$results$Gamma_Omega_mu$mean
@@ -27,6 +29,38 @@ Process_mlVAR <- function(object1,
   phi_RE_sd_2 <- object2$results$Beta$SD
   phi_RE_sd_diff <- phi_RE_sd_1 - phi_RE_sd_2
 
+  # b.3) VAR: RE correlations
+  # if(temporal = "correlated") {
+  #
+  #   # --- Get for dataset 1 ---
+  #   N_d1 <- length(object1$results$Beta$subject)
+  #   p <- ncol(object1$results$Beta$mean)
+  #   m_recor_d1 <- as.data.frame(matrix(NA, N_d1, p^2))
+  #
+  #   # Properly label RE cors
+  #   counter <- 1
+  #   for(j1 in 1:p) {
+  #     for(j2 in 1:p) {
+  #       colnames(m_recor_d1)[counter] <- paste0("Beta(", j1, ",", j2, ")")
+  #       counter <- counter + 1
+  #     }
+  #   }
+  #
+  #   for(i in 1:N_d1) {
+  #     counter <- 1
+  #     for(j1 in 1:p) {
+  #       for(j2 in 1:p) {
+  #         m_recor_d1[i, counter] <- object1$results$Beta$subject[[i]][j1,j2,]
+  #         counter <- counter + 1
+  #       }
+  #     }
+  #   }
+  #
+  #   sd(m_recor_d1[, 1])
+  #   object1$results$Beta$SD
+  # } # end: if correlated?
+
+
 
   # c.1) Contemp: fixed effects
   Gam_fix_1 <- object1$results$Gamma_Theta$mean
@@ -42,6 +76,9 @@ Process_mlVAR <- function(object1,
   Gam_RE_sd_2 <- object2$results$Gamma_Theta$SD
   Gam_RE_sd_2 <- (Gam_RE_sd_2 + t(Gam_RE_sd_2)) / 2 # Apply AND-rule
   Gam_RE_sd_diff <- Gam_RE_sd_1 - Gam_RE_sd_2
+
+  # c.d) Contemp: RE cors
+  # TODO ...
 
 
   outlist <- list("diff_between" = btw_diff,
@@ -86,12 +123,28 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
   # ------ Input Checks -----
 
-  # TODO:
-  # Making sure that ids are unique across both datasets
-  # ... do this by adding unique char strings in both groups
+  # (1) Are the data numerical?
+  v_class <- apply(cbind(data1[, vars], data2[, vars]), 2, function(x) class(x))
+  if(any( !(v_class %in% c("numeric", "integer")) )) stop("Modeled variables need to be provided as integer or numeric variables.")
 
-  # TODO:
-  # All the usual input checks ...
+  # (2) Can we find the all variables?
+  check_coln1 <- c(vars, idvar) %in% colnames(data1)
+  if(any(!check_coln1)) stop("Specified variable names could not be found in dataset 1.")
+  check_coln2 <- c(vars, idvar) %in% colnames(data2)
+  if(any(!check_coln2)) stop("Specified variable names could not be found in dataset 2.")
+
+  # (3) Are IDs unique across datasets?
+  # Get IDs
+  ids1 <- sapply(data1[, idvar], as.character)
+  ids2 <- sapply(data2[, idvar], as.character)
+  v_ids <- c(ids1, ids2)
+  v_u_ids <- unique(v_ids)
+  u_ids1 <- unique(ids1)
+  u_ids2 <- unique(ids2)
+
+  v_intersec <- intersect(u_ids1, u_ids2)
+  if(length(v_intersec) > 0) stop("IDs need to be unique across two datasets.")
+
 
   # ------ Collect passed down arguments -----
   if(missing(estimator)) estimator <- "default"
@@ -109,13 +162,6 @@ mlVAR_GC <- function(data1, # dataset of group 1
   l_data <- list(data1, data2)
   m_data_cmb <- rbind(data1, data2)
 
-  # Get IDs
-  ids1 <- sapply(data1[, idvar], as.character)
-  ids2 <- sapply(data2[, idvar], as.character)
-  v_ids <- c(ids1, ids2)
-  v_u_ids <- unique(v_ids)
-  u_ids1 <- unique(ids1)
-  u_ids2 <- unique(ids2)
   # Get Number of subjects
   v_Ns <- c(length(u_ids1), length(u_ids2))
   totalN <- sum(v_Ns)
