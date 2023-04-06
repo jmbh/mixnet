@@ -15,7 +15,7 @@ Process_mlVAR <- function(object1,
 
   # a) Between network
   btw_1 <- getNet(out_1, "between", nonsig="show")
-  btw_2 <- getNet(out_1, "between", nonsig="show")
+  btw_2 <- getNet(out_2, "between", nonsig="show")
   btw_diff <- btw_1 - btw_2
 
   # b.1) VAR: fixed effects
