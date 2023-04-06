@@ -10,57 +10,23 @@ Process_mlVAR <- function(object1,
                           contemporaneous = "orthogonal",
                           temporal = "orthogonal") {
 
-  # a) Between network
-  btw_1 <- object1$results$Gamma_Omega_mu$mean
-  btw_1 <- (btw_1+t(btw_1)) / 2 # Apply AND-rule
-  btw_2 <- object2$results$Gamma_Omega_mu$mean
-  btw_2 <- (btw_2+t(btw_2)) / 2 # Apply AND-rule
-  btw_diff <- btw_1 - btw_2
+  # Number of vars:
+  p <- ncol(object1$results$Gamma_Omega_mu$mean)
 
+  # a) Between network
+  btw_1 <- getNet(out_1, "between", nonsig="show")
+  btw_2 <- getNet(out_1, "between", nonsig="show")
+  btw_diff <- btw_1 - btw_2
 
   # b.1) VAR: fixed effects
   phi_fix_1 <- object1$results$Beta$mean
   phi_fix_2 <- object2$results$Beta$mean
   phi_fix_diff <- phi_fix_1 - phi_fix_2
 
-
   # b.2) VAR: RE sds
   phi_RE_sd_1 <- object1$results$Beta$SD
   phi_RE_sd_2 <- object2$results$Beta$SD
   phi_RE_sd_diff <- phi_RE_sd_1 - phi_RE_sd_2
-
-  # b.3) VAR: RE correlations
-  # if(temporal = "correlated") {
-  #
-  #   # --- Get for dataset 1 ---
-  #   N_d1 <- length(object1$results$Beta$subject)
-  #   p <- ncol(object1$results$Beta$mean)
-  #   m_recor_d1 <- as.data.frame(matrix(NA, N_d1, p^2))
-  #
-  #   # Properly label RE cors
-  #   counter <- 1
-  #   for(j1 in 1:p) {
-  #     for(j2 in 1:p) {
-  #       colnames(m_recor_d1)[counter] <- paste0("Beta(", j1, ",", j2, ")")
-  #       counter <- counter + 1
-  #     }
-  #   }
-  #
-  #   for(i in 1:N_d1) {
-  #     counter <- 1
-  #     for(j1 in 1:p) {
-  #       for(j2 in 1:p) {
-  #         m_recor_d1[i, counter] <- object1$results$Beta$subject[[i]][j1,j2,]
-  #         counter <- counter + 1
-  #       }
-  #     }
-  #   }
-  #
-  #   sd(m_recor_d1[, 1])
-  #   object1$results$Beta$SD
-  # } # end: if correlated?
-
-
 
   # c.1) Contemp: fixed effects
   Gam_fix_1 <- object1$results$Gamma_Theta$mean
@@ -69,16 +35,12 @@ Process_mlVAR <- function(object1,
   Gam_fix_2 <- (Gam_fix_2 + t(Gam_fix_2)) / 2 # Apply AND-rule
   Gam_fix_diff <- Gam_fix_1 - Gam_fix_2
 
-
   # c.2) Contemp: RE sds
   Gam_RE_sd_1 <- object1$results$Gamma_Theta$SD
   Gam_RE_sd_1 <- (Gam_RE_sd_1 + t(Gam_RE_sd_1)) / 2 # Apply AND-rule
   Gam_RE_sd_2 <- object2$results$Gamma_Theta$SD
   Gam_RE_sd_2 <- (Gam_RE_sd_2 + t(Gam_RE_sd_2)) / 2 # Apply AND-rule
   Gam_RE_sd_diff <- Gam_RE_sd_1 - Gam_RE_sd_2
-
-  # c.d) Contemp: RE cors
-  # TODO ...
 
 
   outlist <- list("diff_between" = btw_diff,
