@@ -141,7 +141,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
     registerDoParallel(cl)
   }
 
-  pb <- txtProgressBar(0, nP+1, style = 3)
+  if(pbar) pb <- txtProgressBar(0, nP+1, style = 3)
 
   # Call foreach:
   out_P <- foreach(b = 1:nP,
@@ -212,7 +212,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
                                        "Models" = l_models)
 
                      # Set progress bar
-                     setTxtProgressBar(pb, b)
+                     if(pbar) setTxtProgressBar(pb, b)
 
                      return(outlist_b)
 
@@ -286,7 +286,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
   } # Loop: 2 groups
 
   # Final step
-  setTxtProgressBar(pb, nP + 1)
+  if(pbar)  setTxtProgressBar(pb, nP + 1)
 
 
   # --- Matrices with True differences ---
