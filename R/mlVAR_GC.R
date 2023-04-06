@@ -143,6 +143,8 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
   if(pbar) pb <- txtProgressBar(0, nP+1, style = 3)
 
+  timer_total <- proc.time()[3]
+
   # Call foreach:
   out_P <- foreach(b = 1:nP,
                    .packages = c("mlVAR", "mixnet"),
@@ -287,6 +289,7 @@ mlVAR_GC <- function(data1, # dataset of group 1
 
   # Final step
   if(pbar)  setTxtProgressBar(pb, nP + 1)
+  runtime <- proc.time()[3] - timer_total
 
 
   # --- Matrices with True differences ---
@@ -337,7 +340,8 @@ mlVAR_GC <- function(data1, # dataset of group 1
                                     "Phi_sd" = a_phi_RE_sd,
                                     "Gam_mean" = a_gam_fixed,
                                     "Gam_sd" = a_gam_RE_sd),
-                  "Models" = l_out_ret)
+                  "Models" = l_out_ret,
+                  "Runtime_min" = runtime / 60)
 
   # ------ Return Output -----
 
