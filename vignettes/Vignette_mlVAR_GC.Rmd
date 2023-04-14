@@ -10,13 +10,13 @@ vignette: >
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = ">"
 )
 ```
 
 The `mixnet` package can be installed from Github using the `devtools` package:
 
-```{r setup}
+```{r setup, message=FALSE, warning=FALSE}
 # library(devtools)
 # install_github("jmbh/mixnet")
 library(mixnet)
@@ -34,22 +34,27 @@ dim(data2)
 head(data2)
 ```
 
-The `mlVAR_CG()` function implements the permutation test and has the same input arguments as the `mlVAR()` function from the `mlVAR` package, except that it requires two data arguments for the two groups and requires specifying the number of permutations the test should be based on. The more permutations, the more precise confidence intervals and p-values can be computed.
+The `mlVAR_CG()` function implements the permutation test and has the same input arguments as the `mlVAR()` function from the `mlVAR` package, except that it requires two data arguments for the two groups and requires specifying the number of permutations the test should be based on. The more permutations, the more precisely p-values can be computed.
 
 We provide the two datasets to `mlVAR_CG()`, and as in `mlVAR()`, we specify the column names of the variables that should be modeled with the argument `vars` and indicate the column with the unique identifiers for each subject with the argument `idvar`.
 
 ```{r}
+set.seed(1) # reproducibility
+
 timer <- proc.time()[3]
+
 output <- mlVAR_GC(data1 = data1, 
                    data2 = data2, 
                    vars = c("V1", "V2", "V3"), 
                    idvar = "id", 
-                   nP = 5, # Should be much more in practice, here less for illustration
-                   verbose = FALSE)
+                   nCores = 1, # choose cores available on your machine
+                   nP = 5, # Should be much more in practice, see preprint!
+                   pbar = FALSE)
+
 proc.time()[3] - timer
 ```
 
-The perhaps most relevant outputs are the observed group differences and their associated p-values. In the current version, we consider group differences in between-person networks, in VAR networks (both fixed effects and random effects standard deviation) and the contemporaneous networks (both fixed effects and random effects standard deviation). The observed group differences in all these networks can be found in `out$TrueDiffs`. All group differences are Group1 - Group2.
+The perhaps most relevant output are the observed group differences and their associated p-values. In the current version, we consider group differences in between-person networks, in VAR networks (both fixed effects and random effects standard deviation) and the contemporaneous networks (both fixed effects and random effects standard deviation). The observed group differences in all these networks can be found in `out$TrueDiffs`. All group differences are Group1 - Group2.
 
 ```{r}
 output$TrueDiffs
@@ -61,9 +66,9 @@ The associated p-values can be found in
 output$Pval
 ```
 
-For example, we see that the group difference for the cross lagged effect 1->2 is significant. Note that the p-value is here exactly zero, because we computed p-values based on empirical sampling distribution. If the test-statistic is far away from the mass of the sampling distribution under the null hypothesis (no group difference), then the density of the sampling distribution in this area is extremely low and therefore unlikely to be sampled. This leads to p-values that are exactly zero.
+For example, we see that the group difference for the cross lagged effect 2->1 is significant. Note that the p-value is here exactly zero, because we computed p-values based on empirical sampling distribution. If the test-statistic is far away from the mass of the sampling distribution under the null hypothesis (no group difference), then the density of the sampling distribution in this area is extremely low and therefore unlikely to be sampled. This leads to p-values that are exactly zero.
 
-We can also inspect the exact sampling distributions. Let's again consider the cross lagged effect 1->2:
+We can also inspect the exact sampling distributions. Let's again consider the cross lagged effect 2->1:
 
 ```{r, fig.align="center", fig.width=7, fig.height=5}
 
