@@ -74,10 +74,45 @@ Epskamp, S., Waldorp, L. J., Mõttus, R., & Borsboom, D. (2018). The Gaussian gr
 Jonas Haslbeck <jonashaslbeck@protonmail.com>
 }
 
-
-\seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
 \examples{
-%%%
+
+\dontrun{
+
+# Use simulated example data loaded with package
+head(data1)
+head(data2)
+
+# Call Permutation test
+out <- mlVAR_GC(data1 = data1,
+                data2 = data2,
+                vars = c("V1", "V2", "V3"),
+                idvar = "id",
+                nCores = 4, # choose max cores possible on your machine
+                nP = 50) # Should be more in practice, see paper!
+
+# P-values for the five parameter types:
+out$Pval
+# e.g., we see that there is a small p-value for
+out$Pval$Phi_mean[1,2]
+# which is a parameter with a true group difference
+# (which we know since this is simulated data)
+
+# The observed group differences (i.e., the test statistics)
+# Can be found in:
+out$TrueDiffs
+
+# Specifically, the difference is: group 1 - group 2
+# For example:
+out$TrueDiffs$Phi_mean[1,2,]
+# The true group difference was -0.4
+
 }
+
+}
+
+
+
+
+
+
+

@@ -1,8 +1,8 @@
 ---
-title: "Vignette for Testing Group Differences across mlVAR Models"
+title: "mlVAR Permutation Test"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Vignette_mlVAR_GC}
+  %\VignetteIndexEntry{mlVAR Permutation Test}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -20,10 +20,9 @@ The `mixnet` package can be installed from Github using the `devtools` package:
 # library(devtools)
 # install_github("jmbh/mixnet")
 library(mixnet)
-library(mlVAR)
 ```
 
-To illustrate the permutation test for group differences in multi-level VAR models we use simulated data that is included in the `mixnet` package. The data consists of two groups with 100 subjects each, with time series of three variables of length 100 for each subject. The data were generated from a mlVAR model in which one of the cross-lagged effects (1->2) is different across groups.
+To illustrate the permutation test for group differences in multilevel VAR models we use simulated data that is included in the `mixnet` package. The data consists of two groups with 100 subjects each, with time series of three variables of length 100 for each subject. The data were generated from a mlVAR model in which one of the cross-lagged effects (2->1) is different across groups.
 
 ```{r}
 data("mlVARGD_sim")
